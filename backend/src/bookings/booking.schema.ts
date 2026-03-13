@@ -9,4 +9,7 @@ export class Booking extends Document {
   @Prop({ default: 'Test Drive' }) type: string; // Test Drive, Inquiry, Wishlist
   @Prop() message: string;
 }
+/**
+ * testing
+ */
 export const BookingSchema = SchemaFactory.createForClass(Booking);

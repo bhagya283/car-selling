@@ -14,7 +14,9 @@ interface InquiryModalProps {
         imageUrl?: string;
     };
 }
-
+/**
+ * testing
+ */
 export default function InquiryModal({ isOpen, onClose, car }: InquiryModalProps) {
     const [formData, setFormData] = useState({
         name: '',
