@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { carService, bookingService } from '../../services/api';
+import { carService, bookingService, reviewService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
     ShieldCheck, Calendar, Gauge,
     Heart, Info, MapPin, CheckCircle2,
-    Star, Zap, Settings, Car, BadgeCheck, Fuel
+    Star, Zap, Settings, Car, BadgeCheck, Fuel, MessageSquare
 } from 'lucide-react';
 import InquiryModal from '../../components/common/InquiryModal';
 
@@ -18,6 +18,7 @@ export default function VehicleDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [inquiryCar, setInquiryCar] = useState<any>(null);
+    const [reviews, setReviews] = useState<any[]>([]);
 
     useEffect(() => {
         const query = new URLSearchParams(window.location.search);
@@ -60,6 +61,15 @@ export default function VehicleDetail() {
         };
         fetchCar();
     }, [id]);
+
+    useEffect(() => {
+        // Fetch all platform reviews to display as dealership testimonials below the car
+        reviewService.getBySeller('').then(res => {
+            setReviews(Array.isArray(res.data) ? res.data : []);
+        }).catch(() => {});
+    }, []);
+
+    // NOTE: Review submission has been refactored into the global MainLayout review panel.
 
     const handleAction = async (type: string) => {
         if (!user) {
@@ -244,6 +254,58 @@ export default function VehicleDetail() {
                                 </div>
                             </div>
                         )}
+
+                        {/* REVIEWS SECTION */}
+                        {new URLSearchParams(window.location.search).get('buy') !== 'true' && (
+                            <div id="reviews-section" style={{ background: 'white', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', marginBottom: '48px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
+                                    <MessageSquare size={22} color="#0070f3" />
+                                    <h2 style={{ fontSize: '22px', fontWeight: 800, margin: 0 }}>Customer Reviews</h2>
+                                    {reviews.length > 0 && (
+                                        <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '100px', fontSize: '13px', fontWeight: 700 }}>
+                                            {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Reviews List */}
+                                {reviews.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                                        <MessageSquare size={40} style={{ marginBottom: '12px', opacity: 0.4 }} />
+                                        <p style={{ fontWeight: 600, margin: 0 }}>No reviews yet. Be the first to review!</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'grid', gap: '16px' }}>
+                                        {reviews.map((review: any, i: number) => (
+                                            <div key={review._id || i} style={{ padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', background: '#fafafa' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                                                    <div>
+                                                        <div style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a' }}>
+                                                            {review.buyerName || 'Anonymous Buyer'}
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px' }}>
+                                                            {[1, 2, 3, 4, 5].map(s => (
+                                                                <Star key={s} size={16}
+                                                                    fill={review.rating >= s ? '#f59e0b' : 'none'}
+                                                                    color={review.rating >= s ? '#f59e0b' : '#cbd5e1'}
+                                                                    strokeWidth={1.5}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>
+                                                        {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Recent'}
+                                                    </div>
+                                                </div>
+                                                {review.comment && (
+                                                    <p style={{ fontSize: '14px', color: '#475569', lineHeight: 1.6, margin: 0 }}>{review.comment}</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* RIGHT COLUMN (Action Card) - Hidden if in Report Flow */}
@@ -305,13 +367,13 @@ export default function VehicleDetail() {
                                         <Calendar size={18} /> Schedule Test Drive
                                     </button>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '10px' }}>
                                         <button
                                             onClick={() => handleAction('Wishlist')}
                                             style={{
                                                 padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0',
                                                 background: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
                                             }}
                                         >
                                             <Heart size={14} /> Wishlist
@@ -321,10 +383,20 @@ export default function VehicleDetail() {
                                             style={{
                                                 padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0',
                                                 background: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
                                             }}
                                         >
                                             <Info size={14} /> Inquiry
+                                        </button>
+                                        <button
+                                            onClick={() => document.getElementById('review-panel-toggle')?.click()}
+                                            style={{
+                                                padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0',
+                                                background: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
+                                            }}
+                                        >
+                                            <MessageSquare size={14} /> Review
                                         </button>
                                     </div>
                                 </div>

@@ -32,9 +32,18 @@ export const orderService = {
     getMyOrders: (userId?: string) => api.get(`/orders/me${userId ? `?userId=${userId}` : ''}`),
     getById: (id: string) => api.get(`/orders/${id}`),
     updateStatus: (id: string, status: string) => api.patch(`/orders/${id}/status`, { status }),
+    cancelOrder: (id: string) => api.patch(`/orders/${id}/status`, { status: 'cancelled' }),
     getYearlyStats: () => api.get('/orders/stats/year'),
-    getYearlySales: () => api.get('/orders/stats/year'), // Mapping for easier recall
+    getYearlySales: () => api.get('/orders/stats/year'),
 };
+
+export const reviewService = {
+    create: (data: any) => api.post('/reviews', data),
+    getByCar: (carId: string) => api.get(`/reviews?carId=${carId}`),
+    getBySeller: (sellerId: string) => api.get(`/reviews?sellerId=${sellerId}`),
+    delete: (id: string) => api.delete(`/reviews/${id}`),
+};
+
 
 export const reportService = {
     getInvoice: (orderId: string) => api.get(`/reports/invoice/${orderId}`, { responseType: 'blob' }),
