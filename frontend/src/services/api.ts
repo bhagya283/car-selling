@@ -45,6 +45,7 @@ export const reportService = {
 export const bookingService = {
     getAll: (userId?: string) => api.get(`/bookings/me${userId ? `?userId=${userId}` : ''}`),
     create: (data: any) => api.post('/bookings', data),
+    updateStatus: (id: string, status: string) => api.patch(`/bookings/${id}/status`, { status }),
     update: (id: string, data: any) => api.patch(`/bookings/${id}`, data),
     delete: (id: string) => api.delete(`/bookings/${id}`),
 };
@@ -61,6 +62,23 @@ export const contactService = {
     getAll: () => api.get('/contacts'),
     markContacted: (id: string) => api.put(`/contacts/${id}/contacted`),
     delete: (id: string) => api.delete(`/contacts/${id}`),
+};
+
+export const uploadService = {
+    uploadSingle: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post('/uploads/single', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+    uploadMultiple: (files: FileList | File[]) => {
+        const formData = new FormData();
+        Array.from(files).forEach(file => formData.append('files', file));
+        return api.post('/uploads/multiple', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    }
 };
 
 export default api;

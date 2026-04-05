@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
@@ -11,6 +11,7 @@ import { ReportsModule } from './reports/reports.module';
 import { OrdersModule } from './orders/orders.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { MailModule } from './mail/mail.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MailModule } from './mail/mail.module';
     OrdersModule,
     ContactsModule,
     MailModule,
+    UploadsModule,
   ],
 })
 export class AppModule { }

@@ -24,7 +24,7 @@ export default function SellerBookings() {
 
     const handleStatusUpdate = async (id: string, status: string) => {
         try {
-            await bookingService.update(id, { status });
+            await bookingService.updateStatus(id, status);
             fetchBookings();
             if (selectedBooking && selectedBooking._id === id) {
                 setShowModal(false);

@@ -252,7 +252,10 @@ export default function Inventory() {
                                                 ) : isBooked ? (
                                                     <span style={{ background: '#6366f1', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>BOOKED</span>
                                                 ) : (
-                                                    <span className="badge badge-verified" style={{ background: '#059669', color: 'white' }}><ShieldCheck size={12} /> CERTIFIED</span>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <span className="badge badge-verified" style={{ background: '#059669', color: 'white' }}><ShieldCheck size={12} /> CERTIFIED</span>
+                                                        <span style={{ background: '#004e82', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>9.5/10</span>
+                                                    </div>
                                                 )}
                                             </div>
                                             <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
@@ -286,7 +289,7 @@ export default function Inventory() {
 
                                             <div style={{ display: 'grid', gap: '10px', marginTop: 'auto' }}>
                                                 <button
-                                                    onClick={() => navigate(`/car/${car._id}`)}
+                                                    onClick={() => navigate(`/car/${car._id}?report=true`)}
                                                     className="btn btn-outline"
                                                     style={{ width: '100%', padding: '10px', borderRadius: '10px', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                                 >
