@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { carService } from '../../services/api';
-import { Plus, Edit2, Trash2, Eye, DollarSign, Package, CheckCircle, Car, Search, Hash, Calendar, Gauge, X } from 'lucide-react';
+import { carService, uploadService } from '../../services/api';
+import { Plus, Edit2, Trash2, Eye, DollarSign, Package, CheckCircle, Car, Search, Hash, Calendar, Gauge, X, Upload } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function OwnerInventory() {
@@ -12,6 +12,7 @@ export default function OwnerInventory() {
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editingCar, setEditingCar] = useState<any>(null);
+    const [uploading, setUploading] = useState(false);
 
     const initialFormData = {
         brand: '',
@@ -42,10 +43,34 @@ export default function OwnerInventory() {
 
     useEffect(() => { fetchMyCars(); }, []);
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setUploading(true);
+            const res = await uploadService.uploadSingle(file);
+            const newUrl = res.data.url;
+
+            const newImages = [...formData.images];
+            newImages[index] = newUrl;
+
+            setFormData({
+                ...formData,
+                images: newImages,
+                imageUrl: index === 0 ? newUrl : formData.imageUrl || newUrl
+            });
+        } catch (err) {
+            console.error("Upload failed", err);
+            alert("Failed to upload image.");
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleAddOrEditCar = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Use the first valid image as the main imageUrl if not provided
             const firstValidImage = formData.images.find(img => img.trim() !== '') || formData.imageUrl;
 
             const data = {
@@ -206,12 +231,6 @@ export default function OwnerInventory() {
                                 </td>
                                 <td style={{ padding: '20px 16px', fontWeight: '800', color: '#0f172a' }}>
                                     Rs.{car.price?.toLocaleString()}
-                                    {car.status?.toLowerCase() === 'reserved' && (
-                                        <div style={{ fontSize: '10px', color: '#f59e0b', marginTop: '2px' }}>[IN CHECKOUT]</div>
-                                    )}
-                                    {car.status?.toLowerCase() === 'sold' && (
-                                        <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '2px' }}>[PURCHASED]</div>
-                                    )}
                                 </td>
                                 <td style={{ padding: '20px 32px', textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -243,7 +262,7 @@ export default function OwnerInventory() {
             {/* Modal - Add/Edit */}
             {showModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
-                    <div style={{ background: 'white', padding: '40px', borderRadius: '32px', width: '560px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', position: 'relative' }}>
+                    <div style={{ background: 'white', padding: '40px', borderRadius: '32px', width: '600px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
                         <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '24px', right: '24px', border: 'none', background: '#f1f5f9', padding: '8px', borderRadius: '10px', cursor: 'pointer' }}>
                             <X size={20} color="#64748b" />
                         </button>
@@ -332,32 +351,66 @@ export default function OwnerInventory() {
                                         />
                                     </div>
                                 </div>
+
                                 <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '12px' }}>VEHICLE IMAGES (4 ANGLES)</label>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '12px' }}>VEHICLE IMAGES (UPLOAD 4 ANGLES)</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                                         {formData.images.map((url, idx) => (
                                             <div key={idx} style={{ position: 'relative' }}>
-                                                <div style={{ position: 'absolute', left: '12px', top: '10px', fontSize: '10px', fontWeight: 800, color: '#94a3b8' }}>#{idx + 1}</div>
-                                                <input
-                                                    placeholder={`Image URL for Angle ${idx + 1}`}
-                                                    value={url}
-                                                    onChange={e => {
-                                                        const newImages = [...formData.images];
-                                                        newImages[idx] = e.target.value;
-                                                        setFormData({ ...formData, images: newImages });
-                                                    }}
-                                                    style={{ width: '100%', padding: '10px 10px 10px 30px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '13px' }}
-                                                />
+                                                <div style={{
+                                                    width: '100%',
+                                                    aspectRatio: '1',
+                                                    borderRadius: '16px',
+                                                    border: '2px dashed #e2e8f0',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    overflow: 'hidden',
+                                                    background: url ? '#f8fafc' : 'white',
+                                                    cursor: 'pointer',
+                                                    position: 'relative'
+                                                }}>
+                                                    {url ? (
+                                                        <>
+                                                            <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                                            <div style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(255,255,255,0.8)', padding: '4px', borderRadius: '8px' }} onClick={(e) => {
+                                                                e.preventDefault();
+                                                                const newImages = [...formData.images];
+                                                                newImages[idx] = '';
+                                                                setFormData({ ...formData, images: newImages });
+                                                            }}>
+                                                                <X size={12} color="#ef4444" />
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}>
+                                                            <Upload size={20} color="#94a3b8" />
+                                                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', marginTop: '4px' }}>Angle {idx + 1}</span>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => handleFileUpload(e, idx)}
+                                                                style={{ display: 'none' }}
+                                                            />
+                                                        </label>
+                                                    )}
+                                                    {uploading && !url && (
+                                                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <div style={{ width: '16px', height: '16px', border: '2px solid #0070f3', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
-                                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px' }}>At least 1 image is required. These will be displayed in the vehicle gallery.</p>
+                                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '12px' }}>Click to upload images from your device. First image will be used as the main display.</p>
                                 </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '16px', marginTop: '40px' }}>
                                 <button type="button" onClick={() => setShowModal(false)} style={{ flex: 1, padding: '14px', borderRadius: '14px', border: '1px solid #e2e8f0', background: 'white', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                                <button type="submit" style={{ flex: 2, padding: '14px', borderRadius: '14px', border: 'none', background: '#0f172a', color: 'white', fontWeight: 700, cursor: 'pointer' }}>
+                                <button type="submit" disabled={uploading} style={{ flex: 2, padding: '14px', borderRadius: '14px', border: 'none', background: '#0f172a', color: 'white', fontWeight: 700, cursor: 'pointer', opacity: uploading ? 0.7 : 1 }}>
                                     {editingCar ? 'Update Vehicle' : 'Publish to Inventory'}
                                 </button>
                             </div>
@@ -365,6 +418,13 @@ export default function OwnerInventory() {
                     </div>
                 </div>
             )}
+
+            <style>{`
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 }

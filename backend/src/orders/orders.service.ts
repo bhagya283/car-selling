@@ -111,7 +111,64 @@ export class OrdersService {
     }
 
     async updateStatus(id: string, status: string): Promise<Order | null> {
-        return this.orderModel.findByIdAndUpdate(id, { status }, { new: true }).exec();
+        const updatedOrder = await this.orderModel.findByIdAndUpdate(id, { status }, { new: true })
+            .populate('car')
+            .populate('user')
+            .exec();
+
+        if (updatedOrder && (status.toLowerCase() === 'confirmed' || status.toLowerCase() === 'declined')) {
+            await this.sendStatusEmail(updatedOrder);
+        }
+
+        return updatedOrder;
+    }
+
+    private async sendStatusEmail(order: any) {
+        const recipientEmail = order.buyerEmail || order.user?.email;
+        const recipientName = order.buyerName || order.user?.name || 'Valued Customer';
+        if (!recipientEmail) return;
+
+        const isConfirmed = order.status.toLowerCase() === 'confirmed';
+        const statusColor = isConfirmed ? '#10b981' : '#ef4444';
+        const statusText = isConfirmed ? 'Confirmed' : 'Declined';
+        const carDetails = order.car ? `${order.car.brand} ${order.car.carModel}` : 'Vehicle';
+
+        await this.mailService.sendMail({
+            to: recipientEmail,
+            subject: `Order Status: ${statusText} - ${carDetails}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <div style="background-color: #004e82; padding: 30px; text-align: center;">
+                        <h1 style="color: white; margin: 0; font-size: 24px;">Order Update</h1>
+                    </div>
+                    <div style="padding: 40px; background-color: white;">
+                        <p style="font-size: 16px; color: #475569; margin-top: 0;">Hello <strong>${recipientName}</strong>,</p>
+                        <p style="font-size: 16px; color: #475569;">Your order for the <strong>${carDetails}</strong> has been <span style="color: ${statusColor}; font-weight: bold; text-transform: uppercase;">${statusText}</span> by our team.</p>
+                        
+                        <div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin: 30px 0; border-left: 4px solid #004e82;">
+                            <h3 style="margin-top: 0; color: #1e293b; font-size: 18px;">Order Details:</h3>
+                            <p style="margin: 8px 0; color: #475569;"><strong>Order ID:</strong> ${order._id}</p>
+                            <p style="margin: 8px 0; color: #475569;"><strong>Amount:</strong> Rs.${order.totalAmount.toLocaleString()}</p>
+                            <p style="margin: 8px 0; color: #475569;"><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
+                        </div>
+
+                        ${isConfirmed ? `
+                        <p style="font-size: 16px; color: #475569;">Congratulations! Your order is now confirmed. Our team will reach out to you within 24-48 hours to discuss the final pickup/delivery arrangements and paperwork.</p>
+                        ` : `
+                        <p style="font-size: 16px; color: #475569;">We regret to inform you that your order could not be processed at this time. If you have already made a deposit, it will be refunded according to our policy. Please contact our support team for more details.</p>
+                        `}
+
+                        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
+                            <p style="font-size: 14px; color: #94a3b8; margin-bottom: 5px;">Thank you for choosing Sai Automobiles</p>
+                            <a href="#" style="color: #004e82; text-decoration: none; font-weight: 600;">Visit our Website</a>
+                        </div>
+                    </div>
+                    <div style="background-color: #f1f5f9; padding: 20px; text-align: center; color: #64748b; font-size: 12px;">
+                        &copy; ${new Date().getFullYear()} Sai Automobiles. All rights reserved.
+                    </div>
+                </div>
+            `
+        });
     }
 
     async findOne(id: string): Promise<Order | null> {

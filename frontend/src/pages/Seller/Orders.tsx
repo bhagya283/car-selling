@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { User, Eye, X, MapPin, Info, Mail, Phone } from 'lucide-react';
+import { orderService } from '../../services/api';
 
 export default function OwnerOrders() {
     const [orders, setOrders] = useState<any[]>([]);
@@ -11,7 +11,7 @@ export default function OwnerOrders() {
     const fetchAllOrders = async () => {
         try {
             setLoading(true);
-            const res = await axios.get('http://localhost:3000/orders');
+            const res = await orderService.getMyOrders(); // This maps to /orders/me which currently returns all for admin
             setOrders(res.data);
         } catch (err) {
             console.error("Failed to fetch all orders", err);
@@ -26,7 +26,7 @@ export default function OwnerOrders() {
 
     const updateOrderStatus = async (orderId: string, newStatus: string) => {
         try {
-            await axios.patch(`http://localhost:3000/orders/${orderId}/status`, { status: newStatus });
+            await orderService.updateStatus(orderId, newStatus);
             setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
             alert("Order status updated successfully!");
         } catch (err) {

@@ -1,4 +1,4 @@
-﻿import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { carService } from '../../services/api';
 import {
@@ -141,6 +141,7 @@ export default function Marketplace() {
                     <img src={car.image || car.imageUrl || 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1200&auto=format&fit=crop'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                     <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '8px' }}>
                       <span style={{ background: '#10b981', color: 'white', fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>FEATURED</span>
+                      <span style={{ background: '#004e82', color: 'white', fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>9.5/10 COND.</span>
                       {car.status && car.status.toLowerCase() !== 'available' && (
                         <span style={{ background: car.status.toLowerCase() === 'sold' ? '#ef4444' : '#f59e0b', color: 'white', fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>{car.status.toUpperCase()}</span>
                       )}
@@ -155,7 +156,7 @@ export default function Marketplace() {
 
                     <div style={{ display: 'grid', gap: '10px' }}>
                       <button
-                        onClick={() => navigate(`/car/${car._id}`)}
+                        onClick={() => navigate(`/car/${car._id}?report=true`)}
                         className="btn btn-outline"
                         style={{ width: '100%', padding: '12px', fontSize: '12px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                       >
@@ -232,6 +233,7 @@ export default function Marketplace() {
                   ][i % 4]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                   <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
                     <span className="badge badge-verified"><ShieldCheck size={12} /> VERIFIED</span>
+                    <span style={{ background: '#004e82', color: 'white', fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px', marginLeft: '8px' }}>9.5/10</span>
                   </div>
                 </div>
                 <div style={{ padding: '20px' }}>
@@ -241,7 +243,7 @@ export default function Marketplace() {
 
                   <div style={{ display: 'grid', gap: '8px' }}>
                     <button
-                      onClick={() => navigate(`/car/${car._id}`)}
+                      onClick={() => navigate(`/car/${car._id}?report=true`)}
                       className="btn btn-outline"
                       style={{ padding: '8px', fontSize: '11px', fontWeight: 700, width: '100%' }}
                     >
