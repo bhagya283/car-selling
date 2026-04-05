@@ -1,9 +1,10 @@
-﻿import React from 'react';
+import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Home, Car, LogOut, User, Gavel, UserCog } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-export default function Layout({ children }) {
-  const { user, logout } = useAuth();
+
+export default function Layout({ children }: { children: ReactNode }) {
+  const { user, logout } = useAuth() as any;
   const navigate = useNavigate();
   const menuItems = [
     { name: 'Marketplace', icon: Home, path: '/', role: 'all' },

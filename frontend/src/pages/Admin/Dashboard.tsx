@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { carService, userService, bookingService, contactService } from '../../services/api';
+import { carService, userService, bookingService, contactService, reviewService } from '../../services/api';
 import {
     TrendingUp, Package, ShieldAlert,
     MoreHorizontal, CheckCircle2, AlertCircle,
-    UserPlus, Calendar
+    UserPlus, Calendar, Star, Trash2, MessageSquare
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -15,6 +15,8 @@ export default function AdminDashboard() {
     const [leadsCount, setLeadsCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState('2026');
+    const [reviews, setReviews] = useState<any[]>([]);
+    const [deletingReview, setDeletingReview] = useState<string | null>(null);
 
     const [totalInventory, setTotalInventory] = useState(0);
 
@@ -32,16 +34,15 @@ export default function AdminDashboard() {
                     return { data: [] };
                 });
 
-                const [statsRes, carsRes, bookingsRes, leadsRes] = await Promise.all([
+                const [statsRes, carsRes, bookingsRes, leadsRes, reviewsRes] = await Promise.all([
                     statsPromise,
                     carsPromise,
                     bookingService.getAll().catch(() => ({ data: [] })),
-                    contactService.getAll().catch(() => ({ data: [] }))
+                    contactService.getAll().catch(() => ({ data: [] })),
+                    reviewService.getBySeller('').catch(() => ({ data: [] })) // fetch all
                 ]);
 
-                if (statsRes && statsRes.data) {
-                    setStats(statsRes.data);
-                }
+                if (statsRes && statsRes.data) setStats(statsRes.data);
 
                 const allCars = Array.isArray(carsRes.data) ? carsRes.data : [];
                 setListings(allCars.slice(0, 5));
@@ -50,9 +51,8 @@ export default function AdminDashboard() {
                 const allBookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
                 setBookings(allBookings.slice(0, 4));
 
-                if (leadsRes && leadsRes.data) {
-                    setLeadsCount(leadsRes.data.length);
-                }
+                if (leadsRes && leadsRes.data) setLeadsCount(leadsRes.data.length);
+                if (reviewsRes && Array.isArray(reviewsRes.data)) setReviews(reviewsRes.data);
             } catch (err) {
                 console.error("Dashboard load failed", err);
             } finally {
@@ -61,6 +61,19 @@ export default function AdminDashboard() {
         };
         loadDashboardData();
     }, []);
+
+    const handleDeleteReview = async (id: string) => {
+        if (!window.confirm('Delete this review?')) return;
+        setDeletingReview(id);
+        try {
+            await reviewService.delete(id);
+            setReviews(prev => prev.filter(r => r._id !== id));
+        } catch {
+            alert('Failed to delete review.');
+        } finally {
+            setDeletingReview(null);
+        }
+    };
 
     // Mock data sets for different years
     const yearlyPerformance: Record<string, number[]> = {
@@ -237,6 +250,87 @@ export default function AdminDashboard() {
                                 <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No vehicles in inventory.</td>
                             </tr>
                         )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Reviews Management Table */}
+            <div style={{ background: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', marginTop: '32px' }}>
+                <div style={{ padding: '24px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <MessageSquare size={20} color="#0070f3" />
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Customer Reviews</h3>
+                        <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: 700 }}>
+                            {reviews.length} total
+                        </span>
+                    </div>
+                </div>
+
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                            <th style={{ textAlign: 'left', padding: '14px 40px', fontSize: '12px', fontWeight: 700, color: '#64748b' }}>REVIEWER</th>
+                            <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: 700, color: '#64748b' }}>RATING</th>
+                            <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: 700, color: '#64748b' }}>COMMENT</th>
+                            <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: 700, color: '#64748b' }}>DATE</th>
+                            <th style={{ textAlign: 'right', padding: '14px 40px', fontSize: '12px', fontWeight: 700, color: '#64748b' }}>ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {reviews.length === 0 ? (
+                            <tr>
+                                <td colSpan={5} style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>
+                                    <MessageSquare size={32} style={{ marginBottom: '12px', opacity: 0.3, display: 'block', margin: '0 auto 12px' }} />
+                                    No reviews yet.
+                                </td>
+                            </tr>
+                        ) : reviews.map((review, i) => (
+                            <tr key={review._id || i} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
+                                onMouseOver={e => (e.currentTarget.style.background = '#fafafa')}
+                                onMouseOut={e => (e.currentTarget.style.background = 'white')}
+                            >
+                                <td style={{ padding: '16px 40px' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{review.buyerName || 'Anonymous'}</div>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>ID: {review.buyerId?.slice(-6) || '—'}</div>
+                                </td>
+                                <td style={{ padding: '16px' }}>
+                                    <div style={{ display: 'flex', gap: '2px' }}>
+                                        {[1,2,3,4,5].map(s => (
+                                            <Star key={s} size={14}
+                                                fill={review.rating >= s ? '#f59e0b' : 'none'}
+                                                color={review.rating >= s ? '#f59e0b' : '#cbd5e1'}
+                                                strokeWidth={1.5}
+                                            />
+                                        ))}
+                                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginLeft: '6px' }}>{review.rating}/5</span>
+                                    </div>
+                                </td>
+                                <td style={{ padding: '16px', maxWidth: '300px' }}>
+                                    <p style={{ fontSize: '13px', color: '#475569', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {review.comment || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>No comment</span>}
+                                    </p>
+                                </td>
+                                <td style={{ padding: '16px', fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                                    {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : '—'}
+                                </td>
+                                <td style={{ padding: '16px 40px', textAlign: 'right' }}>
+                                    <button
+                                        onClick={() => handleDeleteReview(review._id)}
+                                        disabled={deletingReview === review._id}
+                                        style={{
+                                            background: '#fef2f2', border: '1px solid #fecaca',
+                                            color: '#ef4444', padding: '8px 14px', borderRadius: '10px',
+                                            fontWeight: 700, fontSize: '12px', cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: '6px',
+                                            opacity: deletingReview === review._id ? 0.5 : 1
+                                        }}
+                                    >
+                                        <Trash2 size={14} />
+                                        {deletingReview === review._id ? 'Deleting...' : 'Delete'}
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>
